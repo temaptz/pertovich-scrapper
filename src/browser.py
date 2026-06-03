@@ -2,6 +2,9 @@ from time import sleep
 from playwright.sync_api import BrowserContext, Locator
 
 from src.utils import silent_errors
+from src.logger import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_TIMEOUT_MS = 10_000
 
@@ -12,7 +15,7 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
 
 
     page.wait_for_load_state('networkidle', timeout=DEFAULT_TIMEOUT_MS)
-    print('Google page loaded')
+    logger.info('Загружена страница Google')
 
     try:
         accept_button = page.get_by_role(role='button', name='Принять все').or_(
@@ -20,10 +23,9 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
         )
         accept_button.click(timeout=DEFAULT_TIMEOUT_MS)
         page.wait_for_load_state('networkidle', timeout=DEFAULT_TIMEOUT_MS)
-        print('Google cookies accepted')
+        logger.info('Приняты cookie Google')
     except Exception as e:
-        print('Error (or not if elem not exists) accept cookies')
-        print(e)
+        logger.debug('Кнопка принятия cookie не найдена или уже приняты. %s', e)
 
     first_search_result: Locator | None = None
 
@@ -35,7 +37,7 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
             .first
         )
 
-        print('Search input found')
+        logger.debug('Найдено поле поиска Google')
 
         search_input.click()
         sleep(0.3)
@@ -52,8 +54,7 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
         )
 
     except Exception as e:
-        print('Error search')
-        print(e)
+        logger.error('Ошибка поиска в Google. %s', e)
 
     try:
         first_search_result.click(timeout=DEFAULT_TIMEOUT_MS)
@@ -63,7 +64,6 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
         )
         sleep(0.3)
 
-        print('First search result loaded')
+        logger.info('Выполнен переход по первому результату поиска')
     except Exception as e:
-        print('Error open first search result')
-        print(e)
+        logger.error('Ошибка перехода по результату поиска. %s', e)

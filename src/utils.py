@@ -3,6 +3,10 @@ from time import sleep
 from functools import wraps
 from playwright.sync_api import Page
 
+from src.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def retry(attempts=3, delay_ms=1000):
     def decorator(func):
@@ -13,13 +17,13 @@ def retry(attempts=3, delay_ms=1000):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    print(f'Error. Retry ({attempt}/{attempts})', e)
+                    logger.warning('Ошибка. Попытка %s/%s. %s', attempt, attempts, e)
 
                     if attempt < attempts:
-                        print(f'Delay after {delay_ms / 1000} sec...\n')
+                        logger.debug('Ожидание %s сек перед повторной попыткой...', delay_ms / 1000)
                         sleep(delay_ms / 1000)
 
-            print('No more attempts')
+            logger.error('Исчерпаны все попытки повтора')
             raise Exception
 
         return wrapper
@@ -28,7 +32,7 @@ def retry(attempts=3, delay_ms=1000):
 
 
 def silent_errors(page: Page) -> None:
-    page.on('pageerror', lambda e: print('PAGE ERROR', e))
+    page.on('pageerror', lambda e: logger.warning('Ошибка страницы: %s', e))
     page.add_init_script('''
         window.addEventListener('error', function(e) { e.preventDefault(); });
         window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });

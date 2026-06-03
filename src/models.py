@@ -15,9 +15,13 @@ class Product(BaseModel):
     url: str
     name: Optional[str]
     price: Optional[int]
-    price_unit: Optional[str]
+    unit: Optional[str]
     qty_available: Optional[int]
     description: Optional[str]
     properties: list[ProductProperty]
     comments: list[str]
     questions: list[ProductQuestion]
+
+
+class Catalog(BaseModel):
+    products: list[Product]
