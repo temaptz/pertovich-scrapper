@@ -2,8 +2,8 @@ from crawler import process_main_catalog
 from time import sleep
 from camoufox.sync_api import Camoufox
 from pathlib import Path
-
 from src.browser import prepare_browser_cookies
+
 
 with Camoufox(
         os='windows',
