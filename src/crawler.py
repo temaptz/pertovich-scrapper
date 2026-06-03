@@ -1,15 +1,17 @@
 import random
+import re
 from time import sleep
 from playwright.sync_api import BrowserContext, Page
 from src.models import Product, ProductProperty, ProductQuestion
 from src.catalog import exists, add
-from src.utils import page_load_and_scroll, retry
+from src.utils import page_load_and_scroll
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 DOMAIN = ''
 DEFAULT_TIMEOUT_MS = 10_000
+PAGE_INTERACT_TIMEOUT_MS = 3_000
 
 # Работа с главной страницей каталога
 def process_main_catalog(browser: BrowserContext) -> None:
@@ -89,6 +91,7 @@ def _process_product_page(browser: BrowserContext, url: str) -> None:
 
     page_load_and_scroll(page=page, url=url, timeout_ms=DEFAULT_TIMEOUT_MS)
     logger.info('Загружена страница товара [%s]', url)
+    sleep(1)
 
     product = Product(
         url=url,
@@ -113,7 +116,7 @@ def _process_product_page(browser: BrowserContext, url: str) -> None:
 
 def _extract_product_price(page: Page) -> int or None:
     try:
-        price = _extract_int_from_str(page.locator('[data-test="product-gold-price"]').first.text_content())
+        price = _extract_int_from_str(page.locator('.product-page-price-block [data-test="product-gold-price"]').first.text_content())
 
         if price:
             logger.info('Извлечена цена товара: %s [%s]', price, page.url)
@@ -126,7 +129,7 @@ def _extract_product_price(page: Page) -> int or None:
 
 def _extract_product_unit(page: Page) -> str or None:
     try:
-        unit = page.locator('.product-page-price p').get_by_text(r"за .+", exact=False).first.text_content()
+        unit = page.locator('.product-page-price p').get_by_text(re.compile(r"за .+")).first.text_content(timeout=PAGE_INTERACT_TIMEOUT_MS).replace('за ', '')
         if unit:
             logger.info('Извлечена единица измерения товара (способ_1): %s [%s]', unit, page.url)
             return unit
@@ -134,7 +137,7 @@ def _extract_product_unit(page: Page) -> str or None:
         logger.debug('Ошибка извлечения единицы измерения товара (способ_1). [%s] %s', page.url, e)
 
     try:
-        unit = page.locator('.quantity-in-units p').last.text_content()
+        unit = page.locator('.quantity-in-units p').last.text_content(timeout=PAGE_INTERACT_TIMEOUT_MS)
         if unit:
             logger.info('Извлечена единица измерения товара (способ_2): %s [%s]', unit, page.url)
             return unit
@@ -162,7 +165,7 @@ def _extract_product_qty(page: Page) -> int or None:
 def _extract_product_description(page: Page) -> str or None:
     try:
         description_read_more = page.locator('.product-page-description').first.get_by_text('Показать полностью...').first
-        description_read_more.click()
+        description_read_more.click(timeout=PAGE_INTERACT_TIMEOUT_MS)
         sleep(0.3)
         logger.debug('Раскрыто описание товара. [%s]', page.url)
     except Exception as e:
@@ -200,32 +203,32 @@ def _extract_product_comments(page: Page) -> list[str]:
     comments: list[str] = []
     try:
         comments_tab_button = page.locator('[data-test="feedback-section-reviews-tab"]').first
-        comments_tab_button.scroll_into_view_if_needed()
-        comments_tab_button.click()
-        logger.debug('Открыта вкладка отзывев товара. [%s]', page.url)
+        comments_tab_button.scroll_into_view_if_needed(timeout=PAGE_INTERACT_TIMEOUT_MS)
+        comments_tab_button.click(timeout=PAGE_INTERACT_TIMEOUT_MS)
+        logger.debug('Открыта вкладка отзывов товара. [%s]', page.url)
     except Exception as e:
-        logger.debug('Ошибка открытия вкладки отзывев. [%s] %s', page.url, e)
+        logger.debug('Ошибка открытия вкладки отзывов. [%s] %s', page.url, e)
 
     try:
         comments_more_button_class = '.review-list .review-list-show-more-button'
         comments_more_button = page.locator(comments_more_button_class).first
         while comments_more_button:
-            comments_more_button.scroll_into_view_if_needed()
-            comments_more_button.click()
+            comments_more_button.scroll_into_view_if_needed(timeout=PAGE_INTERACT_TIMEOUT_MS)
+            comments_more_button.click(timeout=PAGE_INTERACT_TIMEOUT_MS)
             sleep(DEFAULT_TIMEOUT_MS / 1000 / 2) # Ожидание загрузки пагинации
             comments_more_button = page.locator(comments_more_button_class).first
-            logger.debug('Открыта следующая страница отзывев товара. [%s]', page.url)
+            logger.debug('Открыта следующая страница отзывов товара. [%s]', page.url)
     except Exception as e:
-        logger.debug('Ошибка получения следующе страницы отзывев. [%s] %s', page.url, e)
+        logger.debug('Ошибка получения следующе страницы отзывов. [%s] %s', page.url, e)
 
     try:
         for comment in page.locator('.product-feedback-block [itemprop="description"]').all():
             comments.append(comment.text_content())
     except Exception as e:
-        logger.debug('Ошибка извлечения отзывев. [%s] %s', page.url, e)
+        logger.debug('Ошибка извлечения отзывов. [%s] %s', page.url, e)
 
     if comments:
-        logger.info('Извлечены %s отзывев товара. [%s] ', len(comments), page.url)
+        logger.info('Извлечены %s отзывов о товаре. [%s] ', len(comments), page.url)
 
     return comments
 
@@ -234,8 +237,8 @@ def _extract_product_questions(page: Page) -> list[ProductQuestion]:
     questions: list[ProductQuestion] = []
     try:
         questions_tab_button = page.locator('[data-test="feedback-section-questions-tab-1"]').first
-        questions_tab_button.scroll_into_view_if_needed()
-        questions_tab_button.click()
+        questions_tab_button.scroll_into_view_if_needed(timeout=PAGE_INTERACT_TIMEOUT_MS)
+        questions_tab_button.click(timeout=PAGE_INTERACT_TIMEOUT_MS)
         logger.debug('Открыта вкладка вопросов о товаре. [%s]', page.url)
     except Exception as e:
         logger.debug('Ошибка открытия вкладки вопросов о товаре. [%s] %s', page.url, e)
@@ -244,18 +247,19 @@ def _extract_product_questions(page: Page) -> list[ProductQuestion]:
         questions_more_button_class = '.question-list-show-more-button'
         questions_more_button = page.locator(questions_more_button_class).first
         while questions_more_button:
-            questions_more_button.scroll_into_view_if_needed()
-            questions_more_button.click()
+            questions_more_button.scroll_into_view_if_needed(timeout=PAGE_INTERACT_TIMEOUT_MS)
+            questions_more_button.click(timeout=PAGE_INTERACT_TIMEOUT_MS)
+            sleep(DEFAULT_TIMEOUT_MS / 1000 / 2) # Ожидание загрузки пагинации
             questions_more_button = page.locator(questions_more_button_class).first
             logger.debug('Открыта следующая страница вопросов о товаре. [%s]', page.url)
     except Exception as e:
         logger.debug('Ошибка получения следующей страницы вопросов о товаре. [%s] %s', page.url, e)
 
     try:
-        for q in page.locator('.question-tab-content [itemprop="description"]').all():
+        for q in page.locator('.question-list ul li').all():
             questions.append(ProductQuestion(
-                question=q.locator('.npp-feedback-comment p').text_content(),
-                answer=q.locator('.npp-review-response-list p').text_content(),
+                question=q.locator('.npp-feedback-comment>p').first.text_content(),
+                answer=q.locator('.npp-review-response-list .npp-feedback-comment>p').first.text_content(),
             ))
     except Exception as e:
         logger.debug('Ошибка извлечения вопросов о товаре. [%s] %s', page.url, e)
@@ -267,8 +271,7 @@ def _extract_product_questions(page: Page) -> list[ProductQuestion]:
 
 
 def _extract_int_from_str(text: str) -> int or None:
-    import re
-    if match := re.search(r'\d+', text):
+    if match := re.search(r'\d+', text.replace(' ', '')):
         if value := int(match.group()):
             logger.debug('Извлечено число "%s" из строки "%s"', value, text)
             return value

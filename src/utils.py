@@ -39,7 +39,7 @@ def silent_errors(page: Page) -> None:
     ''')
 
 
-@retry()
+# @retry()
 def page_load_and_scroll(page: Page, url: str, timeout_ms: int) -> None:
     silent_errors(page=page)
     page.goto(url, timeout=timeout_ms)

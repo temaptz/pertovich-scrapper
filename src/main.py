@@ -16,7 +16,7 @@ with Camoufox(
         user_data_dir=f'{Path(__file__).resolve().parent.parent}/camoufox_profile',
         locale='ru-RU',
 ) as camoufox_browser:
-    prepare_browser_cookies(camoufox_browser)
+    # prepare_browser_cookies(camoufox_browser)
     process_main_catalog(camoufox_browser)
 
     sleep(10)
