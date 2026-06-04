@@ -1,3 +1,4 @@
+import os
 from time import sleep
 from playwright.sync_api import BrowserContext, Locator
 
@@ -6,7 +7,7 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-DEFAULT_TIMEOUT_MS = 10_000
+DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '10000'))
 
 def prepare_browser_cookies(browser: BrowserContext) -> None:
     page = browser.pages[0]
@@ -64,6 +65,10 @@ def prepare_browser_cookies(browser: BrowserContext) -> None:
         )
         sleep(0.3)
 
-        logger.info('Выполнен переход по первому результату поиска')
+        logger.info('Выполнен переход по результату поиска. Финальный URL: %s, title: %s', page.url, page.title())
+
+        cookies = page.context.cookies()
+        city_cookies = [c for c in cookies if 'city' in c.get('name', '').lower() or 'region' in c.get('name', '').lower() or 'location' in c.get('name', '').lower()]
+        logger.info('Куки города/региона: %s', city_cookies if city_cookies else 'НЕ НАЙДЕНЫ')
     except Exception as e:
         logger.error('Ошибка перехода по результату поиска. %s', e)

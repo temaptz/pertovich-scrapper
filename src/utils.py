@@ -42,10 +42,14 @@ def silent_errors(page: Page) -> None:
 # @retry()
 def page_load_and_scroll(page: Page, url: str, timeout_ms: int) -> None:
     silent_errors(page=page)
+    logger.debug('Загрузка страницы: %s', url)
     page.goto(url, timeout=timeout_ms)
+    logger.debug('goto завершён. Текущий URL: %s, title: %s', page.url, page.title())
     page.wait_for_load_state('domcontentloaded', timeout=timeout_ms)
-    sleep(5)
+    logger.debug('domcontentloaded достигнут')
+    sleep(3)
     _page_scroll_smooth(page=page)
+    logger.debug('Скролл завершен')
 
 
 def _page_scroll_smooth(page: Page) -> None:

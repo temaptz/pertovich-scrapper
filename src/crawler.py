@@ -1,3 +1,4 @@
+import os
 import random
 import re
 from time import sleep
@@ -9,17 +10,26 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-DOMAIN = ''
-DEFAULT_TIMEOUT_MS = 10_000
-PAGE_INTERACT_TIMEOUT_MS = 3_000
+DOMAIN = os.environ['DOMAIN']
+DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '10000'))
+PAGE_INTERACT_TIMEOUT_MS = 3000
 
 # Работа с главной страницей каталога
 def process_main_catalog(browser: BrowserContext) -> None:
     main_catalog_page = browser.new_page()
     page_load_and_scroll(page=main_catalog_page, url=f'{DOMAIN}/catalog/', timeout_ms=DEFAULT_TIMEOUT_MS)
-    logger.info('Получена страница главного каталога')
+    logger.info('Получена страница главного каталога. URL: %s, title: %s', main_catalog_page.url, main_catalog_page.title())
     links = main_catalog_page.locator('.section-catalog-list-item-link').all()
     logger.debug('Получен список категорий главного каталога. Категорий : %s', len(links))
+
+    if len(links) == 0:
+        logger.warning('Категории не найдены! Проверяем наличие элементов на странице...')
+        body_text = main_catalog_page.locator('body').first.text_content()
+        logger.debug('Body text (первые 500 символов): %s', body_text[:500] if body_text else 'ПУСТО')
+        city_modal = main_catalog_page.locator('[class*="city"], [class*="region"], [class*="location"], [class*="modal"]').all()
+        logger.debug('Найдено элементов с city/region/modal: %s', len(city_modal))
+        h1 = main_catalog_page.locator('h1').all()
+        logger.debug('H1 элементов: %s', [el.text_content() for el in h1])
 
     for link in links:
         url = f'{DOMAIN}{link.get_attribute('href')}'
@@ -114,9 +124,9 @@ def _process_product_page(browser: BrowserContext, url: str) -> None:
     page.close()
 
 
-def _extract_product_price(page: Page) -> int or None:
+def _extract_product_price(page: Page) -> float or None:
     try:
-        price = _extract_int_from_str(page.locator('.product-page-price-block [data-test="product-gold-price"]').first.text_content())
+        price = _extract_float_from_str(page.locator('.product-page-price-block [data-test="product-gold-price"]').first.text_content())
 
         if price:
             logger.info('Извлечена цена товара: %s [%s]', price, page.url)
@@ -271,9 +281,18 @@ def _extract_product_questions(page: Page) -> list[ProductQuestion]:
 
 
 def _extract_int_from_str(text: str) -> int or None:
-    if match := re.search(r'\d+', text.replace(' ', '')):
-        if value := int(match.group()):
-            logger.debug('Извлечено число "%s" из строки "%s"', value, text)
-            return value
+    digits = re.sub(r'\D', '', text)
+    if digits:
+        value = int(digits)
+        logger.debug('Извлечено число "%s" из строки "%s"', value, text)
+        return value
+    return None
 
+
+def _extract_float_from_str(text: str) -> float | None:
+    cleaned = re.sub(r'[^\d.,]', '', text).replace(',', '.')
+    if cleaned:
+        value = float(cleaned)
+        logger.debug('Извлечено число с плавающей точкой "%s" из строки "%s"', value, text)
+        return value
     return None

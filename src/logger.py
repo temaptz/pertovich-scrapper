@@ -19,7 +19,8 @@ FIELD_STYLES = {
 }
 
 
-def setup_logging(level: str = "DEBUG") -> None:
+def setup_logging(level: str | None = None) -> None:
+    level = level or os.environ.get('LOG_LEVEL', 'DEBUG')
     is_tty = hasattr(sys.stderr, "isatty") and sys.stderr.isatty()
     is_pycharm = os.getenv("TERMINAL_EMULATOR") == "JetBrains-JediTerm" or os.getenv("PYCHARM_HOSTED")
 

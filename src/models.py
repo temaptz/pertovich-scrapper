@@ -14,7 +14,7 @@ class ProductProperty(BaseModel):
 class Product(BaseModel):
     url: str
     name: Optional[str]
-    price: Optional[int]
+    price: Optional[float]
     unit: Optional[str]
     qty_available: Optional[int]
     description: Optional[str]
