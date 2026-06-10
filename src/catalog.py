@@ -1,37 +1,28 @@
 import json
-import shelve
 from pathlib import Path
 
-from src.models import Catalog, Product
+from src.models import Catalog
+from src.cache import exists, add as cache_add, get_all
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 CATALOG_PATH = Path(__file__).resolve().parent.parent / 'catalog' / 'catalog.json'
-SHELVE_PATH = str(Path(__file__).resolve().parent.parent / 'catalog' / 'products_cache')
 
 
-def exists(url: str) -> bool:
-    with shelve.open(SHELVE_PATH) as db:
-        return url in db
-
-
-def add(product: Product) -> None:
+def add(product) -> None:
     try:
-        with shelve.open(SHELVE_PATH) as db:
-            db[product.url] = product.model_dump()
-        logger.info('Товар добавлен в кэш. [%s]', product.url)
+        if exists(product.url):
+            logger.info('Товар уже в кэше, пропуск. [%s]', product.url)
+            return
+        cache_add(product)
     except Exception as e:
         logger.error('Ошибка добавления товара в кэш. [%s] %s', product.url, e)
 
 
 def catalog_write() -> None:
     try:
-        products = []
-        with shelve.open(SHELVE_PATH) as db:
-            for key in db:
-                products.append(Product(**db[key]))
-
+        products = get_all()
         catalog = Catalog(products=products)
         CATALOG_PATH.parent.mkdir(parents=True, exist_ok=True)
         CATALOG_PATH.write_text(

@@ -3,8 +3,9 @@ import random
 from time import sleep
 from playwright.sync_api import BrowserContext, Page
 from src.models import Product
-from src.catalog import exists, add, catalog_write
-from src.utils import page_load_and_scroll
+from src.cache import exists
+from src.catalog import add, catalog_write
+from src.utils import page_load_and_scroll, retry
 from src.logger import get_logger
 from src.product import extract_product_price, extract_product_unit, extract_product_qty, extract_product_description, \
     extract_product_properties, extract_product_comments, extract_product_questions
@@ -13,6 +14,7 @@ logger = get_logger(__name__)
 
 DOMAIN = os.environ['DOMAIN']
 DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '30000'))
+RANDOM_ORDER = os.environ.get('RANDOM_ORDER') === 'true'
 
 _products_saved = 0
 
@@ -23,6 +25,9 @@ def process_main_catalog(browser: BrowserContext) -> None:
     logger.info('Получена страница главного каталога. URL: %s, title: %s', main_catalog_page.url, main_catalog_page.title())
     links = main_catalog_page.locator('.section-catalog-list-item-link').all()
     logger.debug('Получен список категорий главного каталога. Категорий : %s', len(links))
+
+    if RANDOM_ORDER:
+        random.shuffle(links)
 
     for link in links:
         url = f'{DOMAIN}{link.get_attribute('href')}'
@@ -85,41 +90,42 @@ def _process_products_pagination(browser: BrowserContext, page: Page) -> None:
 
 
 # Работа со страницей товара
+@retry()
 def _process_product_page(browser: BrowserContext, url: str) -> None:
     global _products_saved
-    page = browser.new_page()
     if exists(url):
         logger.info('Товар уже в каталоге, пропуск. [%s]', url)
-        page.close()
         return
 
-    page_load_and_scroll(page=page, url=url, timeout_ms=DEFAULT_TIMEOUT_MS)
-    logger.info('Загружена страница товара [%s]', url)
-    sleep(1)
+    page = browser.new_page()
+    try:
+        page_load_and_scroll(page=page, url=url, timeout_ms=DEFAULT_TIMEOUT_MS)
+        logger.info('Загружена страница товара [%s]', url)
+        sleep(1)
 
-    product = Product(
-        url=url,
-        name=page.locator('h1').first.text_content(),
-        price=extract_product_price(page=page),
-        unit=extract_product_unit(page=page),
-        qty_available=extract_product_qty(page=page),
-        description=extract_product_description(page=page),
-        properties=extract_product_properties(page=page),
-        comments=extract_product_comments(page=page),
-        questions=extract_product_questions(page=page),
-    )
+        product = Product(
+            url=url,
+            name=page.locator('h1').first.text_content(),
+            price=extract_product_price(page=page),
+            unit=extract_product_unit(page=page),
+            qty_available=extract_product_qty(page=page),
+            description=extract_product_description(page=page),
+            properties=extract_product_properties(page=page),
+            comments=extract_product_comments(page=page),
+            questions=extract_product_questions(page=page),
+        )
 
-    logger.debug('Сформирована полная карточка товара. [%s]', url)
+        logger.debug('Сформирована полная карточка товара. [%s]', url)
 
-    add(product)
-    _products_saved += 1
-    logger.info('Товар #%d сохранён в каталог. [%s]', _products_saved, url)
+        add(product)
+        _products_saved += 1
+        logger.info('Товар #%d сохранён в каталог. [%s]', _products_saved, url)
 
-    if _products_saved <= 10:
-        catalog_write()
-    elif _products_saved <= 100 and _products_saved % 10 == 0:
-        catalog_write()
-    elif _products_saved > 100 and _products_saved % 100 == 0:
-        catalog_write()
-
-    page.close()
+        if _products_saved <= 10:
+            catalog_write()
+        elif _products_saved <= 100 and _products_saved % 10 == 0:
+            catalog_write()
+        elif _products_saved > 100 and _products_saved % 100 == 0:
+            catalog_write()
+    finally:
+        page.close()
