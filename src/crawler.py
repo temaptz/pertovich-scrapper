@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 DOMAIN = os.environ['DOMAIN']
 DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '30000'))
-RANDOM_ORDER = os.environ.get('RANDOM_ORDER') === 'true'
+RANDOM_ORDER = os.environ.get('RANDOM_ORDER') == 'true'
 
 _products_saved = 0
 
