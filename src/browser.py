@@ -2,16 +2,22 @@ import os
 from time import sleep
 from playwright.sync_api import BrowserContext, Locator
 
-from src.utils import silent_errors
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '10000'))
 
+def silent_errors_context(context: BrowserContext) -> None:
+    context.add_init_script('''
+        window.onerror = () => true;
+        window.onunhandledrejection = () => true;
+    ''')
+    context.on('page', lambda page: page.on('pageerror', lambda e: None))
+
+
 def prepare_browser_cookies(browser: BrowserContext) -> None:
     page = browser.pages[0]
-    silent_errors(page)
     page.goto('https://google.ru', timeout=DEFAULT_TIMEOUT_MS)
 
 

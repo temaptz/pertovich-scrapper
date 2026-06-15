@@ -31,17 +31,8 @@ def retry(attempts=10, delay_ms=10000):
     return decorator
 
 
-def silent_errors(page: Page) -> None:
-    page.on('pageerror', lambda e: logger.warning('Ошибка страницы: %s', e))
-    page.add_init_script('''
-        window.addEventListener('error', function(e) { e.preventDefault(); });
-        window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
-    ''')
-
-
 # @retry()
 def page_load_and_scroll(page: Page, url: str, timeout_ms: int) -> None:
-    silent_errors(page=page)
     logger.debug('Загрузка страницы: %s', url)
     page.goto(url, timeout=timeout_ms)
     logger.debug('goto завершён. Текущий URL: %s, title: %s', page.url, page.title())

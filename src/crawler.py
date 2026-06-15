@@ -3,7 +3,7 @@ import random
 from time import sleep
 from playwright.sync_api import BrowserContext, Page
 from src.models import Product
-from src.cache import exists
+from src.cache import exists, get_all
 from src.catalog import add, catalog_write
 from src.utils import page_load_and_scroll, retry
 from src.logger import get_logger
@@ -16,7 +16,7 @@ DOMAIN = os.environ['DOMAIN']
 DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '30000'))
 RANDOM_ORDER = os.environ.get('RANDOM_ORDER') == 'true'
 
-_products_saved = 0
+_products_saved = len(get_all())
 
 # Работа с главной страницей каталога
 def process_main_catalog(browser: BrowserContext) -> None:
