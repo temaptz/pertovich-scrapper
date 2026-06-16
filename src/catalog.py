@@ -7,7 +7,7 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-CATALOG_PATH = Path(__file__).resolve().parent.parent / 'catalog' / 'catalog.json'
+CATALOG_PATH = Path(__file__).resolve().parent.parent / 'temp' / 'catalog.json'
 
 
 def add(product) -> None:

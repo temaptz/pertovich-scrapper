@@ -17,19 +17,20 @@ setup_logging()
 
 logger = get_logger(__name__)
 
-headless = os.environ.get('HEADLESS', 'false').lower() == 'true'
-
+headless = os.environ.get('HEADLESS')
 
 def run_with_recovery(max_restarts: int = 10) -> None:
     for attempt in range(1, max_restarts + 1):
         try:
+            logger.info('Запуск браузера. Headless: %s', headless)
+
             with Camoufox(
                     os='windows',
                     window=(1280, 800),
                     humanize=True,
                     headless=headless,
                     persistent_context=True,
-                    user_data_dir=f'{Path(__file__).resolve().parent.parent}/camoufox_profile',
+                    user_data_dir=f'{Path(__file__).resolve().parent.parent}/temp/camoufox_profile',
                     locale='ru-RU',
             ) as camoufox_browser:
                 silent_errors_context(camoufox_browser)

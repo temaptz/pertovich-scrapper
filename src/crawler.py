@@ -19,6 +19,7 @@ RANDOM_ORDER = os.environ.get('RANDOM_ORDER') == 'true'
 _products_saved = len(get_all())
 
 # Работа с главной страницей каталога
+@retry()
 def process_main_catalog(browser: BrowserContext) -> None:
     main_catalog_page = browser.new_page()
     page_load_and_scroll(page=main_catalog_page, url=f'{DOMAIN}/catalog/', timeout_ms=DEFAULT_TIMEOUT_MS)
@@ -35,6 +36,7 @@ def process_main_catalog(browser: BrowserContext) -> None:
         sleep(random.random() * 3)
 
 # Работа со страницей каталога: список товаров + подкаталоги
+@retry()
 def _process_catalog_page_recursive(browser: BrowserContext, url: str) -> None:
     page = browser.new_page()
     page_load_and_scroll(page=page, url=url, timeout_ms=DEFAULT_TIMEOUT_MS)

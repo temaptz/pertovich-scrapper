@@ -21,8 +21,6 @@ FIELD_STYLES = {
 
 def setup_logging(level: str | None = None) -> None:
     level = level or os.environ.get('LOG_LEVEL', 'DEBUG')
-    is_tty = hasattr(sys.stderr, "isatty") and sys.stderr.isatty()
-    is_pycharm = os.getenv("TERMINAL_EMULATOR") == "JetBrains-JediTerm" or os.getenv("PYCHARM_HOSTED")
 
     coloredlogs.install(
         level=level,
@@ -30,7 +28,7 @@ def setup_logging(level: str | None = None) -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         level_styles=LEVEL_STYLES,
         field_styles=FIELD_STYLES,
-        isatty=is_tty or bool(is_pycharm),
+        isatty=True,
     )
 
     test_logger = logging.getLogger("test")

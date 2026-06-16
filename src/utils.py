@@ -8,7 +8,7 @@ from src.logger import get_logger
 logger = get_logger(__name__)
 
 
-def retry(attempts=10, delay_ms=10000):
+def retry(attempts=10, delay_sec=10):
     def decorator(func):
 
         @wraps(func)
@@ -20,8 +20,8 @@ def retry(attempts=10, delay_ms=10000):
                     logger.error('Ошибка. Попытка %s/%s. %s', attempt, attempts, e)
 
                     if attempt < attempts:
-                        logger.debug('Ожидание %s сек перед повторной попыткой...', delay_ms / 1000)
-                        sleep(delay_ms / 1000)
+                        logger.debug('Ожидание %s сек перед повторной попыткой...', delay_sec)
+                        sleep(delay_sec)
 
             logger.critical('Исчерпаны все попытки повтора')
             raise Exception

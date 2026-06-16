@@ -1,5 +1,5 @@
 playwright>=1.52.0
-camoufox>=0.4.11
+camoufox[geoip]>=0.4.11
 browserforge>=1.2.4
 pydantic>=2.13.4
 coloredlogs>=15.0.1

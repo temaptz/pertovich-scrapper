@@ -7,7 +7,7 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-CACHE_DIR = str(Path(__file__).resolve().parent.parent / 'catalog' / 'products_cache')
+CACHE_DIR = str(Path(__file__).resolve().parent.parent / 'temp' / 'products_cache')
 _cache = Cache(directory=CACHE_DIR)
 
 
