@@ -12,7 +12,7 @@ from src.product import extract_product_price, extract_product_unit, extract_pro
 
 logger = get_logger(__name__)
 
-DOMAIN = os.environ['DOMAIN']
+MAIN_URL = os.environ['MAIN_URL']
 DEFAULT_TIMEOUT_MS = int(os.environ.get('DEFAULT_TIMEOUT_MS', '30000'))
 RANDOM_ORDER = os.environ.get('RANDOM_ORDER') == 'true'
 
@@ -22,7 +22,7 @@ _products_saved = len(get_all())
 @retry()
 def process_main_catalog(browser: BrowserContext) -> None:
     main_catalog_page = browser.new_page()
-    page_load_and_scroll(page=main_catalog_page, url=f'{DOMAIN}/catalog/', timeout_ms=DEFAULT_TIMEOUT_MS)
+    page_load_and_scroll(page=main_catalog_page, url=f'{MAIN_URL}/catalog/', timeout_ms=DEFAULT_TIMEOUT_MS)
     logger.info('Получена страница главного каталога. URL: %s, title: %s', main_catalog_page.url, main_catalog_page.title())
     links = main_catalog_page.locator('.section-catalog-list-item-link').all()
     logger.debug('Получен список категорий главного каталога. Категорий : %s', len(links))
@@ -31,7 +31,7 @@ def process_main_catalog(browser: BrowserContext) -> None:
         random.shuffle(links)
 
     for link in links:
-        url = f'{DOMAIN}{link.get_attribute('href')}'
+        url = f'{MAIN_URL}{link.get_attribute('href')}'
         _process_catalog_page_recursive(browser=browser, url=url)
         sleep(random.random() * 3)
 
@@ -53,7 +53,7 @@ def _process_catalog_page_recursive(browser: BrowserContext, url: str) -> None:
     # Рекурсивный обход подкаталогов
     sub_catalog_links = page.locator('a.catalog-subsection-img').all()
     for link in sub_catalog_links:
-        _process_catalog_page_recursive(browser=browser, url=f'{DOMAIN}{link.get_attribute('href')}')
+        _process_catalog_page_recursive(browser=browser, url=f'{MAIN_URL}{link.get_attribute('href')}')
 
     logger.debug('Завершен обход категории. [%s] [%s]', category_name, url)
 
@@ -71,7 +71,7 @@ def _process_products_pagination(browser: BrowserContext, page: Page) -> None:
         logger.info('Обход пагинации списка товаров. Товаров: %s', len(product_links))
 
         for i in product_links:
-            url = f'{DOMAIN}{i.get_attribute('href')}'
+            url = f'{MAIN_URL}{i.get_attribute('href')}'
             if url not in processed_urls:
                 _process_product_page(browser=browser, url=url)
                 processed_urls.add(url)
