@@ -10,3 +10,4 @@ services:
       - ./temp:/app/temp
     init: true
     shm_size: '2gb'
+    restart: on-failure

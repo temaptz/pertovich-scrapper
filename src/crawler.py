@@ -30,8 +30,9 @@ def process_main_catalog(browser: BrowserContext) -> None:
     if RANDOM_ORDER:
         random.shuffle(links)
 
-    for link in links:
+    for idx, link in enumerate(links, 1):
         url = f'{MAIN_URL}{link.get_attribute('href')}'
+        logger.info('Начат обход категории %d/%d [%s]', idx, len(links), url)
         _process_catalog_page_recursive(browser=browser, url=url)
         sleep(random.random() * 3)
 
