@@ -11,17 +11,21 @@
 
 ```mermaid
 flowchart TD
-    A["🔍 Google Search"] -->|"реферальный трафик"| B["🍪 Cookie Warmup"]
+    A["🔍 Google Search"] --> B["🍪 Cookie Warmup"]
     B --> C["📂 Root Catalog"]
     C --> D["🔀 Recursive DFS"]
-    D -->|"подкатегория"| D
+    D --> D
     D --> E["📄 Product Page"]
     E --> F["💰 Price"]
     E --> G["📋 Properties"]
     E --> H["💬 Comments"]
     E --> I["❓ Q&A"]
     E --> J["📝 Description"]
-    F & G & H & I & J --> K["✅ Pydantic Validation"]
+    F --> K["✅ Pydantic Validation"]
+    G --> K
+    H --> K
+    I --> K
+    J --> K
     K --> L["💾 catalog.json"]
 
     style A fill:#4285f4,color:#fff
